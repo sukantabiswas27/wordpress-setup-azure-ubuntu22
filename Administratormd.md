@@ -165,7 +165,22 @@ sudo systemctl restart apache2
   - Pass: `StrongPassword@123`
 
 ---
+##🧩 Step 10 : Increase PHP Upload Limits
+Edit your PHP config file (usually located at /etc/php/8.x/apache2/php.ini — replace 8.x with your actual PHP version).
 
+```bash
+sudo nano /etc/php/8.x/apache2/php.ini
+```
+## Update these values:
+```
+upload_max_filesize = 200M
+post_max_size = 200M
+memory_limit = 256M
+max_execution_time = 300
+max_input_time = 300
+
+```
+## Then restart Apache:
 ## 🔒 Optional: Secure phpMyAdmin
 
 ```bash
