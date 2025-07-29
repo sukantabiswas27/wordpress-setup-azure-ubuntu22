@@ -149,8 +149,6 @@ sudo systemctl restart apache2
 Link it:
 ```bash
 sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin
-sudo rm -rf /var/www/luxcapenew.thinksurfmedia.in/phpmyadmin
-sudo ln -s /usr/share/phpmyadmin /var/www/luxcapenew.thinksurfmedia.in/phpmyadmin
 sudo systemctl restart apache2
 ```
 
