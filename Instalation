@@ -1,0 +1,148 @@
+# 📦 WordPress + phpMyAdmin Setup on Azure Ubuntu 22.04 (Subdomain: luxcapenew.thinksurfmedia.in)
+
+---
+
+## ✅ Prerequisites
+
+- Ubuntu 22.04 VM on Azure
+- Domain/subdomain (e.g., `luxcapenew.thinksurfmedia.in`)
+- DNS A-record pointing to Azure VM Public IP
+- Apache, MySQL, PHP stack installed
+
+---
+
+## 📁 Step 1: Create MySQL Database & User for WordPress
+
+```bash
+sudo mysql -u root -p
+
+Inside MySQL:
+
+CREATE DATABASE wp_luxcape;
+CREATE USER 'wpuser_luxcape'@'localhost' IDENTIFIED BY 'India@123';
+GRANT ALL PRIVILEGES ON wp_luxcape.* TO 'wpuser_luxcape'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+🌐 Step 2: Set Up WordPress Directory
+
+cd /var/www/
+sudo curl -O https://wordpress.org/latest.zip
+sudo apt install unzip -y
+sudo unzip latest.zip
+sudo mv wordpress luxcapenew.thinksurfmedia.in
+sudo chown -R www-data:www-data /var/www/luxcapenew.thinksurfmedia.in
+sudo chmod -R 755 /var/www/luxcapenew.thinksurfmedia.in
+
+🌍 Step 3: Create Apache Virtual Host
+
+sudo nano /etc/apache2/sites-available/luxcapenew.thinksurfmedia.in.conf
+
+Paste:
+
+<VirtualHost *:80>
+    ServerAdmin admin@thinksurfmedia.in
+    ServerName luxcapenew.thinksurfmedia.in
+    DocumentRoot /var/www/luxcapenew.thinksurfmedia.in
+
+    <Directory /var/www/luxcapenew.thinksurfmedia.in>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/luxcapenew_error.log
+    CustomLog ${APACHE_LOG_DIR}/luxcapenew_access.log combined
+</VirtualHost>
+
+Enable and reload:
+
+sudo a2ensite luxcapenew.thinksurfmedia.in.conf
+sudo a2enmod rewrite
+sudo systemctl reload apache2
+
+🔐 Step 4: Enable HTTPS (Optional)
+
+sudo apt install certbot python3-certbot-apache -y
+sudo certbot --apache -d luxcapenew.thinksurfmedia.in
+
+🧑‍💻 Step 5: Create Global MySQL User for Remote Access
+  sudo mysql -u root -p
+Inside MySQL:
+
+CREATE USER 'adminremote'@'%' IDENTIFIED BY 'StrongPassword@123';
+GRANT ALL PRIVILEGES ON *.* TO 'adminremote'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EXIT;
+
+🌐 Step 6: Allow Remote MySQL Access
+
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+
+Change:  bind-address = 127.0.0.1 to bind-address = 0.0.0.0
+
+Restart MySQL:
+sudo systemctl restart mysql
+
+🔥 Step 7: Open Port 3306 in Firewall + Azure NSG
+
+sudo ufw allow 3306/tcp
+sudo ufw reload
+
+Azure NSG:
+Go to Azure > VM > Networking > Inbound Port Rules
+
+Add rule:
+
+Port: 3306
+
+Protocol: TCP
+
+Source: Your IP
+
+Action: Allow
+
+🧰 Step 8: Install phpMyAdmin
+
+sudo apt update
+sudo apt install phpmyadmin php-mbstring php-zip php-gd php-json php-curl -y
+sudo phpenmod mbstring
+sudo systemctl restart apache2
+
+Link it to both Apache roots:
+sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin
+
+Reload Apache: 
+sudo systemctl restart apache2
+
+🌐 Step 9: Access URLs
+
+WordPress: https://luxcapenew.thinksurfmedia.in
+
+phpMyAdmin: https://luxcapenew.thinksurfmedia.in/phpmyadmin
+
+Remote MySQL (Workbench/DBeaver):
+
+Host: luxcapenew.thinksurfmedia.in
+
+Port: 3306
+
+User: adminremote
+
+Password: StrongPassword@123
+
+🔒 (Optional) Secure phpMyAdmin with Password
+
+sudo apt install apache2-utils
+sudo htpasswd -c /etc/phpmyadmin/.htpasswd admin
+
+Edit config:
+sudo nano /etc/apache2/conf-available/phpmyadmin.conf
+Add inside <Directory /usr/share/phpmyadmin>:
+
+AuthType Basic
+AuthName "Restricted Access"
+AuthUserFile /etc/phpmyadmin/.htpasswd
+Require valid-user
+
+Then: sudo systemctl reload apache2
